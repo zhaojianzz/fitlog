@@ -62,7 +62,7 @@ nav button.on{color:var(--acc)}
 
 /* 训练 */
 .seg{display:flex;background:var(--soft);border-radius:12px;padding:3px}
-.seg button{flex:1;padding:8px 0;border-radius:10px;font-weight:600;color:var(--mut)}
+.seg button{flex:1;padding:8px 0;border-radius:10px;font-weight:600;color:var(--mut);white-space:nowrap}
 .seg button.on{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .stats{display:flex;gap:8px;margin-top:14px}
 .stats div{flex:1;background:var(--soft);border-radius:12px;padding:10px}
@@ -126,6 +126,9 @@ nav button.on{color:var(--acc)}
 .food b{font-size:15px;font-weight:600}
 .food span{font-size:13px;color:var(--mut)}
 .food.flash{animation:flash .6s}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 11px;border-radius:999px;background:var(--soft);font-size:14px}
+.chip.on{background:var(--acc);color:#fff}
 @keyframes flash{from{background:var(--acc-soft)}to{background:var(--card)}}
 
 /* 身体 */
@@ -191,21 +194,61 @@ const PLAN = {
   ]
 };
 const PROTEIN_TARGET = 120;
+const KCAL_TARGET = 2200; // 只作参考，热量缺口以体重趋势为准
 const MEALS = ['早餐','午餐','加餐','晚餐','其他'];
+// 套餐按钮：p 蛋白质 g，k 热量 kcal（外食估算）
 const DEFAULT_PRESETS = [
-  {n:'2 茶叶蛋＋菜包', p:16, c:'早餐'}, {n:'纯牛奶 250 mL', p:8, c:'早餐'}, {n:'茶叶蛋 1 个', p:6, c:'早餐'},
-  {n:'双鸡腿午餐', p:33, c:'午餐'}, {n:'豆干一份', p:10, c:'午餐'},
-  {n:'即食鸡胸一包', p:18, c:'加餐'}, {n:'增肌粉 85 g', p:20, c:'加餐'}, {n:'乳清一勺', p:22, c:'加餐'},
-  {n:'高蛋白酸奶', p:15, c:'加餐'}, {n:'香蕉', p:1, c:'加餐'},
-  {n:'瘦肉晚餐（一掌心）', p:30, c:'晚餐'}, {n:'肉少的晚餐', p:15, c:'晚餐'},
+  {n:'2 茶叶蛋＋菜包', p:16, k:280, c:'早餐'}, {n:'纯牛奶 250 mL', p:8, k:160, c:'早餐'}, {n:'茶叶蛋 1 个', p:6, k:72, c:'早餐'},
+  {n:'双鸡腿午餐', p:33, k:650, c:'午餐'}, {n:'豆干一份', p:10, k:80, c:'午餐'},
+  {n:'即食鸡胸一包', p:18, k:120, c:'加餐'}, {n:'增肌粉 85 g', p:20, k:330, c:'加餐'}, {n:'乳清一勺', p:22, k:120, c:'加餐'},
+  {n:'高蛋白酸奶', p:15, k:150, c:'加餐'}, {n:'香蕉', p:1, k:110, c:'加餐'},
+  {n:'瘦肉晚餐（一掌心）', p:30, k:650, c:'晚餐'}, {n:'肉少的晚餐', p:15, k:650, c:'晚餐'},
 ];
+// 食物库：每 100 g 可食部分的蛋白质 p 和热量 k；u 为常用单位对应的克数（"两"=50 g 通用）
+// 数值参考《中国食物成分表》常见值取整，外食做法不同会有出入
+const FOODS = [
+  {g:'肉蛋豆', n:'鸡腿肉（熟，去骨）', p:24, k:200, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'鸡胸肉（熟）', p:30, k:165, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'瘦猪肉（熟）', p:27, k:200, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'肥瘦猪肉／五花（熟）', p:14, k:420, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'牛肉（熟，瘦）', p:30, k:200, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'鱼肉（熟）', p:20, k:120, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'虾仁（熟）', p:22, k:100, u:{'掌心':100}},
+  {g:'肉蛋豆', n:'鸡蛋／卤蛋', p:13, k:144, u:{'个':50}},
+  {g:'肉蛋豆', n:'北豆腐', p:12, k:98, u:{'块':150}},
+  {g:'肉蛋豆', n:'豆干', p:16, k:145, u:{'片':15}},
+  {g:'主食', n:'米饭（熟）', p:2.6, k:116, u:{'碗':220}},
+  {g:'主食', n:'面条（湿面，按店里的两数）', p:8.5, k:285},
+  {g:'主食', n:'馒头', p:7, k:220, u:{'个':100}},
+  {g:'主食', n:'肉包子', p:8, k:230, u:{'个':80}},
+  {g:'主食', n:'菜包子', p:6, k:180, u:{'个':70}},
+  {g:'主食', n:'小笼包', p:9, k:240, u:{'个':25}},
+  {g:'主食', n:'抄手／饺子', p:8, k:200, u:{'个':20}},
+  {g:'主食', n:'白粥', p:1.1, k:46, u:{'碗':300}},
+  {g:'主食', n:'红薯／土豆', p:1.5, k:90, u:{'个':200}},
+  {g:'奶饮', n:'纯牛奶', p:3.2, k:65, u:{'盒':250}},
+  {g:'奶饮', n:'无糖豆浆', p:3, k:35, u:{'杯':300}},
+  {g:'奶饮', n:'普通酸奶', p:3, k:90, u:{'盒':200}},
+  {g:'奶饮', n:'乳清蛋白粉', p:75, k:390, u:{'勺':30}},
+  {g:'奶饮', n:'增肌粉（康比特 MASS）', p:24, k:390, u:{'勺':85}},
+  {g:'果蔬', n:'炒青菜（含油）', p:2, k:80, u:{'份':150}},
+  {g:'果蔬', n:'香蕉', p:1.4, k:93, u:{'根':120}},
+  {g:'果蔬', n:'苹果／橙子', p:0.5, k:50, u:{'个':200}},
+  {g:'其他', n:'士力架', p:9, k:490, u:{'条':51}},
+  {g:'其他', n:'花生／坚果', p:25, k:590, u:{'把':15}},
+];
+function foodCalc(f, qty, unit){ // 返回 {p, k, grams}
+  const grams = qty * (unit==='g' ? 1 : unit==='两' ? 50 : (f.u && f.u[unit]) || 1);
+  return {grams, p: Math.round(f.p*grams/100), k: Math.round(f.k*grams/100)};
+}
 
 // ---------- 存储（格式与旧版相同，旧数据直接可用）----------
 const KEY = 'fitlog-v1';
 let db;
 try { db = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
 db = Object.assign({sets:[], food:[], body:{}, presets:DEFAULT_PRESETS, start:null}, db || {});
-db.presets.forEach(p => { if(!p.c){ const d = DEFAULT_PRESETS.find(x=>x.n===p.n); p.c = d ? d.c : '其他'; } });
+db.presets.forEach(p => { const d = DEFAULT_PRESETS.find(x=>x.n===p.n); if(!p.c) p.c = d ? d.c : '其他'; if(p.k==null && d) p.k = d.k; });
+db.food.forEach(f => { if(f.k==null){ const d = db.presets.find(x=>x.n===f.n); if(d && d.k!=null) f.k = d.k; } });
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){ alert('保存失败：' + e.message); } }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
@@ -422,6 +465,7 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && restE
 function viewFood(){
   const items = db.food.filter(f=>f.date===curDate).sort((a,b)=>a.ts-b.ts);
   const total = items.reduce((a,f)=>a+f.p,0);
+  const kcal = items.reduce((a,f)=>a+(f.k||0),0), noK = items.filter(f=>f.k==null).length;
   const pct = Math.min(1, total/PROTEIN_TARGET), R = 46, C = 2*Math.PI*R;
   const left = PROTEIN_TARGET - total;
   let h = `<div class="card"><div class="ringwrap">
@@ -430,34 +474,71 @@ function viewFood(){
       <div class="c"><div><b class="num">${total}</b><span>/ ${PROTEIN_TARGET} g</span></div></div></div>
     <div class="grow"><div style="font-weight:600;font-size:17px">蛋白质</div>
       <div class="mut">${left>0?`还差 <b style="color:var(--fg)">${left} g</b>`:'<span style="color:var(--ok);font-weight:600">今天已达标</span>'}</div>
-      <div class="mut small" style="margin-top:4px">${items.length} 条记录 · 数值为估算</div></div>
+      <div class="mut small" style="margin-top:6px">热量约 <b class="num" style="color:var(--fg)">${kcal}</b> kcal${noK?`（${noK} 条无热量）`:''}<br>参考 ${KCAL_TARGET}，缺口看「趋势」页</div></div>
   </div>
-  ${items.length?`<div class="log">${items.map(f=>`<div><time class="num">${new Date(f.ts).toTimeString().slice(0,5)}</time><span class="grow">${esc(f.n)}</span><span class="mut num">${f.p} g</span><button class="x" onclick="delFood('${f.id}')" aria-label="删除">×</button></div>`).join('')}</div>`:''}
+  ${items.length?`<div class="log">${items.map(f=>`<div><time class="num">${new Date(f.ts).toTimeString().slice(0,5)}</time><span class="grow">${esc(f.n)}</span><span class="mut num small" style="text-align:right">${f.p} g${f.k!=null?`<br>${f.k} kcal`:''}</span><button class="x" onclick="delFood('${f.id}')" aria-label="删除">×</button></div>`).join('')}</div>`:''}
   </div>`;
+  h += viewEstimate();
   MEALS.forEach(m=>{
     const ps = db.presets.map((p,i)=>({...p,i})).filter(p=>p.c===m);
     if(!ps.length) return;
-    h += `<div class="sec">${m}</div><div class="grid">${ps.map(p=>`<button class="food" id="pf${p.i}" onclick="addFood(${p.i})"><b>${esc(p.n)}</b><span>${p.p} g 蛋白质</span></button>`).join('')}</div>`;
+    h += `<div class="sec">${m} · 常吃的一键记</div><div class="grid">${ps.map(p=>`<button class="food" id="pf${p.i}" onclick="addFood(${p.i})"><b>${esc(p.n)}</b><span>${p.p} g 蛋白${p.k!=null?` · ${p.k} kcal`:''}</span></button>`).join('')}</div>`;
   });
-  h += `<div class="sec">不在上面？自己填</div><div class="card">
+  h += `<div class="sec">知道营养标签？直接填</div><div class="card">
     <input class="field" id="fn" placeholder="吃了什么">
-    <div class="row" style="margin-top:8px"><input class="field" id="fp" type="number" inputmode="numeric" placeholder="蛋白质 g（估）" style="flex:1">
-      <select class="field" id="fc" style="width:96px">${MEALS.map(m=>`<option>${m}</option>`).join('')}</select></div>
-    <div class="row" style="margin-top:10px"><label class="row grow mut small"><input type="checkbox" id="fsave"> 同时存成按钮</label><button class="ghost" onclick="addCustom()">记录</button></div>
+    <div class="row" style="margin-top:8px"><input class="field" id="fp" type="number" inputmode="numeric" placeholder="蛋白质 g"><input class="field" id="fk" type="number" inputmode="numeric" placeholder="热量 kcal"></div>
+    <div class="row" style="margin-top:10px"><select class="field" id="fc" style="width:96px">${MEALS.map(m=>`<option>${m}</option>`).join('')}</select><label class="row grow mut small"><input type="checkbox" id="fsave"> 存成按钮</label><button class="ghost" onclick="addCustom()">记录</button></div>
   </div>`;
   return h;
 }
+// 按分量估算：选食物 → 选数量和单位 → 自动算蛋白质和热量
+let est = {g:'肉蛋豆', i:null, qty:1, unit:'g'};
+function viewEstimate(){
+  const groups = [...new Set(FOODS.map(f=>f.g))];
+  let h = `<div class="sec">按分量估算 · 只知道吃了多少时用</div><div class="card">
+    <div class="seg" style="margin-bottom:10px">${groups.map(g=>`<button class="${g===est.g?'on':''}" onclick="est.g='${g}';est.i=null;render()" style="font-size:14px">${g}</button>`).join('')}</div>
+    <div class="chips">${FOODS.map((f,i)=>f.g!==est.g?'':`<button class="chip ${i===est.i?'on':''}" onclick="pickFood(${i})">${esc(f.n)}</button>`).join('')}</div>`;
+  if(est.i!=null){
+    const f = FOODS[est.i], r = foodCalc(f, est.qty, est.unit);
+    const units = [...Object.keys(f.u||{}), '两', 'g'];
+    const quick = est.unit==='g' ? [50,100,150,200] : [0.5,1,1.5,2,3];
+    h += `<div style="margin-top:12px;padding-top:12px;border-top:.5px solid var(--line)">
+      <div class="row"><div class="stepper grow" style="background:var(--soft);border-radius:14px;padding:6px">
+          <button onclick="estAdj(-1)">−</button><input class="num" type="number" inputmode="decimal" value="${est.qty}" onchange="est.qty=Math.max(0,parseFloat(this.value)||0);render()"><button onclick="estAdj(1)">+</button></div>
+        <div class="seg">${units.map(u=>`<button class="${u===est.unit?'on':''}" onclick="estUnit('${u}')" style="padding:8px 10px">${u}</button>`).join('')}</div></div>
+      <div class="chips" style="margin-top:8px">${quick.map(q=>`<button class="chip ${q===est.qty?'on':''}" onclick="est.qty=${q};render()">${q} ${est.unit}</button>`).join('')}</div>
+      <div style="margin-top:12px"><b class="num" style="font-size:22px">${r.p} g</b> <span class="mut">蛋白质</span> &nbsp;<b class="num" style="font-size:22px">${r.k}</b> <span class="mut">kcal</span>
+        <span class="mut small"> · 约 ${Math.round(r.grams)} g${/面条/.test(f.n)?' 生面':''}</span></div>
+      <button class="big" style="margin-top:10px" onclick="addEst()">记录 ${esc(f.n.replace(/（.*）/,''))} ${est.qty}${est.unit}</button>
+      ${f.u&&f.u['掌心']?'<div class="mut small" style="margin-top:6px">一掌心 ≈ 100 g 熟肉（手掌大小、一指厚，不含手指）</div>':''}
+    </div>`;
+  }
+  return h + '</div>';
+}
+function mealNow(){ const h = new Date().getHours(); return h<10?'早餐':h<14?'午餐':h<18?'加餐':'晚餐'; }
+function pickFood(i){ const u = Object.keys(FOODS[i].u||{})[0]; est.i = i; est.unit = u || '两'; est.qty = u ? 1 : 2; render(); }
+function estUnit(u){ if(u===est.unit) return; const f = FOODS[est.i], g = foodCalc(f, est.qty, est.unit).grams;
+  est.unit = u; const per = foodCalc(f, 1, u).grams; est.qty = u==='g' ? Math.round(g) : Math.round(g/per*2)/2; render(); }
+function estAdj(d){ const step = est.unit==='g' ? 10 : 0.5; est.qty = Math.max(0, +(est.qty + d*step).toFixed(1)); render(); }
+function addEst(){
+  const f = FOODS[est.i], r = foodCalc(f, est.qty, est.unit);
+  if(!r.grams) return toast('数量不能为 0');
+  const e = {id:uid(), date:curDate, n:`${f.n} ${est.qty}${est.unit}`, p:r.p, k:r.k, ts:Date.now()};
+  db.food.push(e); save(); render();
+  toast(`已记录 ${e.n}`, ()=>{ db.food = db.food.filter(x=>x.id!==e.id); });
+}
 function addFood(i){
-  const p = db.presets[i], f = {id:uid(), date:curDate, n:p.n, p:p.p, ts:Date.now()};
+  const p = db.presets[i], f = {id:uid(), date:curDate, n:p.n, p:p.p, k:p.k, ts:Date.now()};
   db.food.push(f); save(); render();
   const b = $('#pf'+i); b && b.classList.add('flash');
   toast(`已记录 ${p.n}`, ()=>{ db.food = db.food.filter(x=>x.id!==f.id); });
 }
 function addCustom(){
-  const n=$('#fn').value.trim(), p=parseFloat($('#fp').value)||0, c=$('#fc').value;
+  const n=$('#fn').value.trim(), p=parseFloat($('#fp').value)||0, kv=parseFloat($('#fk').value), c=$('#fc').value;
+  const k = isNaN(kv) ? undefined : kv;
   if(!n) return toast('先填吃了什么');
-  if($('#fsave').checked) db.presets.push({n, p, c});
-  const f = {id:uid(), date:curDate, n, p, ts:Date.now()};
+  if($('#fsave').checked) db.presets.push({n, p, k, c});
+  const f = {id:uid(), date:curDate, n, p, k, ts:Date.now()};
   db.food.push(f); save(); render();
   toast(`已记录 ${n}`, ()=>{ db.food = db.food.filter(x=>x.id!==f.id); });
 }
@@ -535,6 +616,23 @@ function delta(cur, prev, unit, goodDown){
   const good = goodDown ? d<0 : d>0;
   return `<em class="${good?'down':'up'}">${d>0?'↑':'↓'} ${fmt1(Math.abs(d))}${unit} 比上周</em>`;
 }
+// 1 kg 体重变化约对应 7700 kcal：用两周平均体重之差反推每天的热量缺口
+function dailyDeficit(wNow, wPrev){ return wNow==null||wPrev==null ? null : Math.round((wPrev - wNow) * 7700 / 7); }
+function deficitCard(wNow, wPrev, kcalPts, from, to){
+  const d = dailyDeficit(wNow, wPrev);
+  const kDays = kcalPts.filter(p=>p.x>=from && p.x<=to);
+  const intake = kDays.length>=5 ? kDays.reduce((a,p)=>a+p.y,0)/kDays.length : null;
+  let verdict, cls;
+  if(d==null){ verdict='需要连续两周、每周至少 3 天的晨重'; cls='mut'; }
+  else if(d < 100){ verdict='基本没有缺口：先查油和汤汁，或增加步行'; cls='up'; }
+  else if(d <= 600){ verdict='缺口合适，保持现在的吃法'; cls='down'; }
+  else { verdict='缺口偏大：如果饿、累或训练退步，每天多吃 100–200 kcal'; cls='up'; }
+  return `<div class="kpi" style="grid-column:span 2"><span>按体重变化推算的每天热量缺口</span>
+    <b class="num">${d==null?'—':(d>=0?'约 '+d:'盈余 '+(-d))}<small class="mut"> kcal/天</small></b>
+    <em class="${cls}">${verdict}</em>
+    ${intake!=null&&d!=null?`<div class="mut small" style="margin-top:4px">近 7 天记录摄入约 ${Math.round(intake)} kcal/天 → 推算维持热量约 ${Math.round(intake + d)} kcal/天</div>`:''}
+    <div class="mut small" style="margin-top:4px">体重周平均之差 × 7700 ÷ 7。前两周含水分变化，第 3 周起更准</div></div>`;
+}
 let chartEx = null;
 function viewChart(){
   const t = todayStr(), w1 = addDays(t,-6), w0 = addDays(t,-13), w0e = addDays(t,-7);
@@ -544,6 +642,8 @@ function viewChart(){
   const sleep = days.map(d=>({x:d, y:sleepHours(db.body[d].bed, db.body[d].wake)})).filter(p=>p.y!=null);
   const pd = {}; db.food.forEach(f=>pd[f.date]=(pd[f.date]||0)+f.p);
   const protein = Object.keys(pd).sort().map(d=>({x:d,y:pd[d]}));
+  const kd = {}; db.food.forEach(f=>{ if(f.k!=null) kd[f.date]=(kd[f.date]||0)+f.k; });
+  const kcalPts = Object.keys(kd).sort().map(d=>({x:d,y:kd[d]}));
   const wNow = avgIn(wPts,w1,t), wPrev = avgIn(wPts,w0,w0e);
   const sNow = avgIn(sleep,w1,t), sPrev = avgIn(sleep,w0,w0e);
   const pNow = avgIn(protein,w1,t), pHit = protein.filter(p=>p.x>=w1 && p.y>=PROTEIN_TARGET).length;
@@ -555,6 +655,7 @@ function viewChart(){
     <div class="kpi"><span>最新腰围</span><b class="num">${lastWaist?lastWaist.y:'—'}<small class="mut"> cm</small></b>${wd!=null?`<em class="${wd<=0?'down':'up'}">比起始 ${wd<=0?'↓':'↑'} ${fmt1(Math.abs(wd))} cm</em>`:'<em class="mut">每周量一次</em>'}</div>
     <div class="kpi"><span>近 7 天平均睡眠</span><b class="num">${sNow!=null?fmt1(sNow):'—'}<small class="mut"> 小时</small></b>${delta(sNow,sPrev,' h',false)}</div>
     <div class="kpi"><span>近 7 天蛋白质</span><b class="num">${pNow!=null?Math.round(pNow):'—'}<small class="mut"> g/天</small></b><em class="mut">${pHit} 天达到 ${PROTEIN_TARGET} g</em></div>
+    ${deficitCard(wNow, wPrev, kcalPts, w1, t)}
     <div class="kpi" style="grid-column:span 2"><span>近 7 天训练</span><b class="num">${trainDays}<small class="mut"> 次</small></b><em class="${trainDays>=3?'down':'mut'}">${trainDays>=3?'达到每周 3 次':'目标每周 3 次'}</em></div>
   </div>`;
   const exNames = [...new Set(db.sets.map(s=>s.ex))];
@@ -562,7 +663,8 @@ function viewChart(){
   h += lineChart('晨重', rolling(wPts,7), {y2:true, sub:'灰点为每天，蓝线为 7 天平均'})
     + lineChart('腰围 cm', waist)
     + lineChart('睡眠时长', sleep, {ref:7, sub:'绿色虚线为 7 小时'})
-    + lineChart('每日蛋白质 g', protein, {ref:PROTEIN_TARGET, y0:0, sub:`绿色虚线为 ${PROTEIN_TARGET} g`});
+    + lineChart('每日蛋白质 g', protein, {ref:PROTEIN_TARGET, y0:0, sub:`绿色虚线为 ${PROTEIN_TARGET} g`})
+    + lineChart('每日热量 kcal（估）', kcalPts, {ref:KCAL_TARGET, y0:0, sub:`绿色虚线为参考 ${KCAL_TARGET}；外食误差大，只看大致趋势`});
   if(exNames.length){
     const exPts = {}; db.sets.filter(s=>s.ex===chartEx).forEach(s=>{ const e = s.w*(1+s.reps/30); exPts[s.date]=Math.max(exPts[s.date]||0, e); });
     const isAssist = [...PLAN.A,...PLAN.B].some(e=>e.n===chartEx && e.assist);
@@ -587,7 +689,7 @@ function exportCSV(which){
     const cnt={}; download(`训练_${t}.csv`, csv([['日期','训练日','动作','第几组','重量kg','次数'],
       ...db.sets.slice().sort((a,b)=>a.ts-b.ts).map(s=>{ const k=s.date+s.ex; cnt[k]=(cnt[k]||0)+1; return [s.date,s.day,s.ex,cnt[k],s.w,s.reps]; })]), 'text/csv');
   } else if(which==='food'){
-    download(`饮食_${t}.csv`, csv([['日期','时间','内容','蛋白质g'], ...db.food.slice().sort((a,b)=>a.ts-b.ts).map(f=>[f.date,new Date(f.ts).toTimeString().slice(0,5),f.n,f.p])]), 'text/csv');
+    download(`饮食_${t}.csv`, csv([['日期','时间','内容','蛋白质g','热量kcal'], ...db.food.slice().sort((a,b)=>a.ts-b.ts).map(f=>[f.date,new Date(f.ts).toTimeString().slice(0,5),f.n,f.p,f.k])]), 'text/csv');
   } else {
     download(`身体_${t}.csv`, csv([['日期','上床','起床','睡眠小时','晨重kg','腰围cm','精力','酸痛','油重','备注'],
       ...Object.keys(db.body).sort().map(d=>{ const b=db.body[d], h=sleepHours(b.bed,b.wake); return [d,b.bed,b.wake,h==null?'':h.toFixed(2),b.weight,b.waist,b.energy,b.sore,b.oily?'是':'',b.note]; })]), 'text/csv');
