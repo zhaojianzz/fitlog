@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="练吃睡">
+<meta name="theme-color" content="#1f4e5f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>练吃睡记录</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--fg:#1c2329;--mut:#6b7780;--line:#e1e6ea;--acc:#1f6f8b;--acc2:#e8f3f7;--ok:#2e7d4f;--warn:#b36b00;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#111518;--card:#1b2126;--fg:#e8edf0;--mut:#93a0a9;--line:#2c353c;--acc:#5fb3d0;--acc2:#1d3640;--ok:#6cc58f;--warn:#e0a54a;--bad:#ef7a72}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0;flex:1}
+main{padding:12px 16px;max-width:640px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;border:0;background:none;padding:12px 0;font-size:15px;color:var(--mut)}
+nav button.on{color:var(--acc);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.card h3{margin:0 0 4px;font-size:16px}
+.mut{color:var(--mut);font-size:13px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;min-width:0}
+input[type=number]{width:84px}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;padding:8px 14px}
+.btn.ghost{background:var(--acc2);color:var(--acc);border-color:transparent}
+.btn.sm{padding:4px 10px;font-size:14px}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.step button{border:0;background:var(--acc2);color:var(--acc);width:40px;height:38px;font-size:20px}
+.step span{min-width:40px;text-align:center;font-weight:600}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:16px;padding:3px 10px;font-size:14px}
+.seg{display:flex;border:1px solid var(--acc);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:none;color:var(--acc);padding:6px 18px}
+.seg button.on{background:var(--acc);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.grid button{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:10px;text-align:left}
+.grid button b{display:block;font-size:14px}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--acc)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.list div{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.list div:last-child{border-bottom:0}
+.x{border:0;background:none;color:var(--mut);font-size:18px;padding:0 6px}
+label.f{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--mut);font-size:22px}
+</style>
+</head>
+<body>
+<header><h1>练吃睡</h1><input type="date" id="date"></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<script>
+// ---------- 计划配置（改动作就改这里）----------
+const PLAN = {
+  A: [
+    {n:'深蹲（或倒蹬／哈克）', lo:6, hi:10, main:true},
+    {n:'杠铃平板卧推', lo:6, hi:10, main:true},
+    {n:'辅助引体向上', lo:8, hi:12, main:true, assist:true},
+    {n:'坐姿腿弯举', lo:10, hi:15},
+    {n:'哑铃侧平举', lo:12, hi:20},
+    {n:'直杆绳索下压（可选）', lo:10, hi:15},
+  ],
+  B: [
+    {n:'罗马尼亚硬拉', lo:6, hi:10, main:true},
+    {n:'上斜哑铃卧推', lo:8, hi:12, main:true},
+    {n:'宽距下拉', lo:8, hi:12, main:true},
+    {n:'倒蹬／哈克深蹲', lo:8, hi:12},
+    {n:'站姿提踵', lo:10, hi:15},
+    {n:'辅助双杠臂屈伸（可选）', lo:8, hi:12, assist:true},
+    {n:'牧师器弯举（可选）', lo:10, hi:15},
+  ]
+};
+const PROTEIN_TARGET = 120;
+const DEFAULT_PRESETS = [
+  {n:'2 茶叶蛋＋菜包', p:16}, {n:'纯牛奶 250 mL', p:8},
+  {n:'双鸡腿午餐', p:33}, {n:'瘦肉晚餐（一掌心）', p:30},
+  {n:'肉少的晚餐', p:15}, {n:'即食鸡胸一包', p:18},
+  {n:'增肌粉 85 g', p:20}, {n:'乳清一勺', p:22},
+  {n:'茶叶蛋 1 个', p:6}, {n:'豆干一份', p:10},
+  {n:'高蛋白酸奶', p:15}, {n:'香蕉', p:1},
+];
+
+// ---------- 存储 ----------
+const KEY = 'fitlog-v1';
+let db;
+try { db = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+db = Object.assign({sets:[], food:[], body:{}, presets:DEFAULT_PRESETS, start:null}, db || {});
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){ alert('保存失败：' + e.message); } }
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+
+// ---------- 工具 ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+function ymd(d){ const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
+const todayStr = () => ymd(new Date());
+function addDays(s, n){ const d=new Date(s+'T00:00'); d.setDate(d.getDate()+n); return ymd(d); }
+function sleepHours(bed, wake){ // "01:00","08:30" -> 7.5，跨午夜也对
+  if(!bed||!wake) return null;
+  const m = t => { const [h,mi]=t.split(':').map(Number); return h*60+mi; };
+  return ((m(wake)-m(bed)+1440)%1440)/60;
+}
+function trainWeek(date){ // 以第一次训练日为第 1 周
+  if(!db.start) return 1;
+  return Math.floor((new Date(date+'T00:00') - new Date(db.start+'T00:00'))/864e5/7)+1;
+}
+function targetSets(ex, date){ return ex.main && trainWeek(date) >= 3 ? 3 : 2; }
+function lastSession(name, before){ // 该动作在 before 之前最近一次的所有组
+  const prev = db.sets.filter(s => s.ex===name && s.date < before);
+  if(!prev.length) return null;
+  const d = prev.reduce((a,s)=> s.date>a ? s.date : a, '');
+  return {date:d, sets: prev.filter(s=>s.date===d)};
+}
+function hint(ex, last, date){
+  if(!last) return '';
+  const reps = last.sets.map(s=>s.reps);
+  if(last.sets.length >= targetSets(ex,date) && reps.every(r=>r>=ex.hi))
+    return `<span class="ok">上次全部做到 ${ex.hi} 次：${ex.assist?'可减一档辅助':'可加最小一档'}</span>`;
+  if(reps.some(r=>r<ex.lo)) return `<span class="warn">上次有组不到 ${ex.lo} 次：保持或${ex.assist?'加一档辅助':'降一档'}</span>`;
+  return '<span class="mut">保持重量，争取多做 1 次</span>';
+}
+
+// ---------- 页面 ----------
+let tab = 'train', day = null;
+const dateEl = $('#date');
+dateEl.value = todayStr();
+dateEl.onchange = () => { day = null; render(); };
+const TABS = {train:'训练', food:'饮食', body:'身体', chart:'图表', data:'数据'};
+$('#nav').innerHTML = Object.entries(TABS).map(([k,v])=>`<button data-t="${k}">${v}</button>`).join('');
+$('#nav').onclick = e => { const t=e.target.dataset.t; if(t){ tab=t; render(); scrollTo(0,0);} };
+
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
+  dateEl.style.visibility = tab==='chart'||tab==='data' ? 'hidden' : 'visible';
+  $('#main').innerHTML = ({train:viewTrain, food:viewFood, body:viewBody, chart:viewChart, data:viewData})[tab]();
+}
+
+function suggestDay(date){
+  const today = db.sets.find(s=>s.date===date);
+  if(today) return today.day;
+  const prev = db.sets.filter(s=>s.date<date).sort((a,b)=>a.date<b.date?-1:1).pop();
+  return prev && prev.day==='A' ? 'B' : 'A';
+}
+
+function viewTrain(){
+  const date = dateEl.value;
+  day = day || suggestDay(date);
+  const wk = trainWeek(date);
+  let h = `<div class="row" style="margin-bottom:12px"><div class="seg">${['A','B'].map(d=>`<button class="${d===day?'on':''}" onclick="day='${d}';render()">训练 ${d}</button>`).join('')}</div><span class="mut">第 ${wk} 周${db.start?'':'（首次记录后开始计周）'}</span></div>`;
+  const exs = PLAN[day].slice();
+  db.sets.filter(s=>s.date===date && s.day===day && !exs.some(e=>e.n===s.ex))
+    .forEach(s=>{ if(!exs.some(e=>e.n===s.ex)) exs.push({n:s.ex, lo:8, hi:12}); });
+  exs.forEach((ex,i)=>{
+    const done = db.sets.filter(s=>s.date===date && s.ex===ex.n);
+    const last = lastSession(ex.n, date);
+    const w = done.length ? done[done.length-1].w : (last ? last.sets[0].w : '');
+    const r = done.length ? done[done.length-1].reps : ex.lo;
+    h += `<div class="card"><h3>${esc(ex.n)}</h3>
+      <div class="mut">目标 ${targetSets(ex,date)} 组 × ${ex.lo}–${ex.hi} 次${ex.main?' · 组间 2–3 分钟':' · 组间 60–90 秒'}</div>
+      ${last?`<div class="mut">上次 ${last.date.slice(5)}：${ex.assist?'辅助 ':''}${last.sets[0].w} kg × ${last.sets.map(s=>s.reps).join('、')}</div>`:''}
+      <div>${hint(ex,last,date)}</div>
+      <div class="chips">${done.map((s,k)=>`<span class="chip" onclick="delSet('${s.id}')">第${k+1}组 ${s.w}kg×${s.reps}</span>`).join('')}</div>
+      <div class="row"><input type="number" inputmode="decimal" step="0.5" id="w${i}" value="${w}" placeholder="${ex.assist?'辅助kg':'kg'}">
+      <div class="step"><button onclick="bump(${i},-1)">−</button><span id="r${i}">${r}</span><button onclick="bump(${i},1)">+</button></div>
+      <button class="btn" onclick="addSet(${i},'${esc(ex.n)}')">记一组</button></div></div>`;
+  });
+  h += `<div class="card"><h3>其他动作</h3><div class="mut">器械被占用时的替换动作，记一组后会出现在上面</div>
+    <div class="row" style="margin-top:6px"><input id="oname" placeholder="动作名" style="flex:1"><input type="number" inputmode="decimal" id="ow" placeholder="kg"><input type="number" inputmode="numeric" id="or" placeholder="次" style="width:60px"><button class="btn" onclick="addOther()">记</button></div></div>
+    <p class="mut">点已记录的组可以删除。只记完整、标准的次数。</p>`;
+  return h;
+}
+function bump(i,d){ const el=$('#r'+i); el.textContent=Math.max(0,+el.textContent+d); }
+function pushSet(ex, w, reps){
+  const date = dateEl.value;
+  if(!db.start || date < db.start) db.start = date;
+  db.sets.push({id:uid(), date, day, ex, w, reps, ts:Date.now()});
+  save(); render();
+}
+function addSet(i, name){
+  const w = parseFloat($('#w'+i).value), reps = +$('#r'+i).textContent;
+  if(isNaN(w)) return alert('先填重量（徒手填 0）');
+  if(!reps) return alert('次数不能为 0');
+  pushSet(name, w, reps);
+}
+function addOther(){
+  const n=$('#oname').value.trim(), w=parseFloat($('#ow').value), r=parseInt($('#or').value);
+  if(!n||isNaN(w)||!r) return alert('动作名、重量、次数都要填');
+  pushSet(n, w, r);
+}
+function delSet(id){ if(confirm('删除这一组？')){ db.sets=db.sets.filter(s=>s.id!==id); save(); render(); } }
+
+function viewFood(){
+  const date = dateEl.value;
+  const items = db.food.filter(f=>f.date===date);
+  const total = items.reduce((a,f)=>a+f.p,0);
+  const pct = Math.min(100, total/PROTEIN_TARGET*100);
+  return `<div class="card"><div class="row"><h3 style="flex:1">蛋白质 ${total} / ${PROTEIN_TARGET} g</h3><span class="${total>=PROTEIN_TARGET?'ok':'mut'}">${total>=PROTEIN_TARGET?'达标':'还差 '+(PROTEIN_TARGET-total)+' g'}</span></div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="list">${items.map(f=>`<div><span>${new Date(f.ts).toTimeString().slice(0,5)} ${esc(f.n)}</span><span>${f.p} g <button class="x" onclick="delFood('${f.id}')">×</button></span></div>`).join('') || '<span class="mut">点下面的按钮记录</span>'}</div></div>
+    <div class="grid">${db.presets.map((p,i)=>`<button onclick="addFood(${i})"><b>${esc(p.n)}</b><span class="mut">${p.p} g 蛋白</span></button>`).join('')}</div>
+    <div class="card" style="margin-top:12px"><h3>自定义</h3><div class="row"><input id="fn" placeholder="吃了什么" style="flex:1"><input type="number" inputmode="numeric" id="fp" placeholder="蛋白 g" style="width:76px"><button class="btn" onclick="addCustom()">记</button></div>
+    <label class="f"><span>同时存为常用按钮</span><input type="checkbox" id="fsave"></label></div>
+    <p class="mut">蛋白质是估算值。按钮的增删在「数据」页。</p>`;
+}
+function addFood(i){ const p=db.presets[i]; db.food.push({id:uid(), date:dateEl.value, n:p.n, p:p.p, ts:Date.now()}); save(); render(); }
+function addCustom(){
+  const n=$('#fn').value.trim(), p=parseFloat($('#fp').value)||0;
+  if(!n) return alert('填写吃了什么');
+  if($('#fsave').checked) db.presets.push({n, p});
+  db.food.push({id:uid(), date:dateEl.value, n, p, ts:Date.now()}); save(); render();
+}
+function delFood(id){ db.food=db.food.filter(f=>f.id!==id); save(); render(); }
+
+const BODY_FIELDS = [
+  ['bed','昨晚上床','time'], ['wake','今早起床','time'],
+  ['weight','晨重 kg','number'], ['waist','腰围 cm（每周一次）','number'],
+  ['energy','精力 1–5','number'], ['sore','腿部酸痛 0–5','number'],
+  ['oily','今天有油重的饭','checkbox'], ['note','备注','text'],
+];
+function viewBody(){
+  const date = dateEl.value, b = db.body[date] || {};
+  const hrs = sleepHours(b.bed, b.wake);
+  return `<div class="card">${BODY_FIELDS.map(([k,l,t])=>`<label class="f"><span>${l}</span>${
+    t==='checkbox' ? `<input type="checkbox" id="b_${k}" ${b[k]?'checked':''} onchange="saveBody()">`
+    : `<input type="${t}" id="b_${k}" value="${esc(b[k]??'')}" ${t==='number'?'inputmode="decimal" step="0.1"':''} style="${t==='text'?'flex:1':'width:120px'}" onchange="saveBody()">`
+  }</label>`).join('')}
+  <div class="mut">${hrs!=null?`睡眠约 ${hrs.toFixed(1)} 小时${hrs<7?'，<span class="warn">少于 7 小时</span>':''}`:'填上床和起床时间后显示睡眠时长'}</div></div>
+  <p class="mut">改完自动保存。晨重：起床上厕所后、吃喝前称。</p>`;
+}
+function saveBody(){
+  const b = {};
+  BODY_FIELDS.forEach(([k,,t])=>{ const el=$('#b_'+k); const v = t==='checkbox'?el.checked : t==='number'?(el.value===''?null:+el.value) : el.value;
+    if(v!==null && v!=='' && v!==false) b[k]=v; });
+  if(Object.keys(b).length) db.body[dateEl.value]=b; else delete db.body[dateEl.value];
+  save(); render();
+}
+
+// ---------- 图表 ----------
+function lineChart(title, pts, opt={}){ // pts: [{x:'YYYY-MM-DD', y, y2?}]
+  if(pts.length<2) return `<div class="card"><h3>${title}</h3><span class="mut">数据不足 2 天</span></div>`;
+  const W=600,H=260,L=64,R=10,T=14,B=34;
+  const xs=pts.map(p=>new Date(p.x+'T00:00').getTime()), ys=pts.flatMap(p=>[p.y,p.y2]).filter(v=>v!=null);
+  let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  if(opt.y0!=null) y0=Math.min(y0,opt.y0); if(opt.ref!=null){y0=Math.min(y0,opt.ref);y1=Math.max(y1,opt.ref);}
+  if(y1===y0){y1+=1;y0-=1;} const pad=(y1-y0)*.1; y0-=pad; y1+=pad;
+  const X=t=>L+(t-x0)/(x1-x0||1)*(W-L-R), Y=v=>T+(1-(v-y0)/(y1-y0))*(H-T-B);
+  const path=k=>pts.map((p,i)=>p[k]==null?'':`${X(xs[i]).toFixed(1)},${Y(p[k]).toFixed(1)}`).filter(Boolean).join(' ');
+  const ticks=[y0+pad,(y0+y1)/2,y1-pad];
+  return `<div class="card"><h3>${title}</h3><svg viewBox="0 0 ${W} ${H}">
+    ${ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-4}" y="${Y(v)+4}" text-anchor="end">${+v.toFixed(1)}</text>`).join('')}
+    ${opt.ref!=null?`<line x1="${L}" x2="${W-R}" y1="${Y(opt.ref)}" y2="${Y(opt.ref)}" stroke="var(--ok)" stroke-dasharray="4 4"/>`:''}
+    <polyline points="${path('y')}" fill="none" stroke="${opt.y2?'var(--mut)':'var(--acc)'}" stroke-width="${opt.y2?2:4}"/>
+    ${opt.y2?`<polyline points="${path('y2')}" fill="none" stroke="var(--acc)" stroke-width="4"/>`:''}
+    ${pts.map((p,i)=>`<circle cx="${X(xs[i])}" cy="${Y(p.y)}" r="4" fill="${opt.y2?'var(--mut)':'var(--acc)'}"/>`).join('')}
+    <text x="${L}" y="${H-6}">${pts[0].x.slice(5)}</text><text x="${W-R}" y="${H-6}" text-anchor="end">${pts[pts.length-1].x.slice(5)}</text>
+  </svg>${opt.legend?`<div class="mut">${opt.legend}</div>`:''}</div>`;
+}
+function rolling(pts, days){ // 每点取前 days 天（含当天）的平均
+  return pts.map(p=>{ const from=addDays(p.x,-(days-1)); const win=pts.filter(q=>q.x>=from&&q.x<=p.x);
+    return {...p, y2: win.reduce((a,q)=>a+q.y,0)/win.length}; });
+}
+let chartEx = null;
+function viewChart(){
+  const days = Object.keys(db.body).sort();
+  const weight = rolling(days.filter(d=>db.body[d].weight).map(d=>({x:d, y:db.body[d].weight})), 7);
+  const waist = days.filter(d=>db.body[d].waist).map(d=>({x:d, y:db.body[d].waist}));
+  const sleep = days.map(d=>({x:d, y:sleepHours(db.body[d].bed, db.body[d].wake)})).filter(p=>p.y!=null);
+  const pd = {}; db.food.forEach(f=>pd[f.date]=(pd[f.date]||0)+f.p);
+  const protein = Object.keys(pd).sort().map(d=>({x:d,y:pd[d]}));
+  const exNames = [...new Set(db.sets.map(s=>s.ex))];
+  chartEx = exNames.includes(chartEx) ? chartEx : exNames[0];
+  const exPts = {}; db.sets.filter(s=>s.ex===chartEx).forEach(s=>{ // 每次训练：Epley 估算 1RM 的最大值
+    const e = s.w*(1+s.reps/30); exPts[s.date]=Math.max(exPts[s.date]||0, e); });
+  const exSeries = Object.keys(exPts).sort().map(d=>({x:d, y:+exPts[d].toFixed(1)}));
+  const isAssist = [...PLAN.A,...PLAN.B].some(e=>e.n===chartEx && e.assist);
+  return lineChart('晨重（灰点每日，蓝线 7 天平均）', weight, {y2:true})
+    + lineChart('腰围 cm', waist)
+    + lineChart('睡眠时长（绿线 7 小时）', sleep, {ref:7})
+    + lineChart(`每日蛋白质 g（绿线 ${PROTEIN_TARGET}）`, protein, {ref:PROTEIN_TARGET, y0:0})
+    + (exNames.length ? `<div class="card"><select onchange="chartEx=this.value;render()" style="width:100%">${exNames.map(n=>`<option ${n===chartEx?'selected':''}>${esc(n)}</option>`).join('')}</select></div>`
+       + lineChart(`${esc(chartEx)}：估算力量${isAssist?'（辅助动作，数值下降才是进步）':''}`, exSeries, {legend:'按 重量×(1+次数/30) 估算，用来看趋势，不是真实极限'}) : '');
+}
+
+// ---------- 数据 ----------
+function csv(rows){ return '﻿' + rows.map(r=>r.map(v=>{ v=v??''; v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(',')).join('\n'); }
+function download(name, text, type){
+  const blob = new Blob([text], {type});
+  const file = new File([blob], name, {type});
+  if (navigator.canShare && navigator.canShare({files:[file]})) return navigator.share({files:[file]}).catch(()=>{});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+}
+function exportCSV(which){
+  const t = todayStr();
+  if(which==='sets'){
+    const cnt={}; download(`训练_${t}.csv`, csv([['日期','训练日','动作','第几组','重量kg','次数'],
+      ...db.sets.slice().sort((a,b)=>a.ts-b.ts).map(s=>{ const k=s.date+s.ex; cnt[k]=(cnt[k]||0)+1; return [s.date,s.day,s.ex,cnt[k],s.w,s.reps]; })]), 'text/csv');
+  } else if(which==='food'){
+    download(`饮食_${t}.csv`, csv([['日期','时间','内容','蛋白质g'], ...db.food.slice().sort((a,b)=>a.ts-b.ts).map(f=>[f.date,new Date(f.ts).toTimeString().slice(0,5),f.n,f.p])]), 'text/csv');
+  } else {
+    download(`身体_${t}.csv`, csv([['日期','上床','起床','睡眠小时','晨重kg','腰围cm','精力','酸痛','油重','备注'],
+      ...Object.keys(db.body).sort().map(d=>{ const b=db.body[d], h=sleepHours(b.bed,b.wake); return [d,b.bed,b.wake,h==null?'':h.toFixed(2),b.weight,b.waist,b.energy,b.sore,b.oily?'是':'',b.note]; })]), 'text/csv');
+  }
+}
+function backup(){ download(`练吃睡备份_${todayStr()}.json`, JSON.stringify(db), 'application/json'); db.lastBackup=todayStr(); save(); render(); }
+function restore(input){
+  const f = input.files[0]; if(!f) return;
+  f.text().then(t=>{ const d=JSON.parse(t); if(!Array.isArray(d.sets)||!Array.isArray(d.food)) throw new Error('不是本应用的备份文件');
+    if(confirm(`备份里有 ${d.sets.length} 组训练、${d.food.length} 条饮食。用它覆盖当前数据？`)){ db=Object.assign({presets:DEFAULT_PRESETS,body:{}},d); save(); render(); alert('已恢复'); } })
+   .catch(e=>alert('读取失败：'+e.message));
+}
+function delPreset(i){ if(confirm('删除按钮「'+db.presets[i].n+'」？')){ db.presets.splice(i,1); save(); render(); } }
+function viewData(){
+  const since = db.lastBackup ? Math.round((new Date(todayStr())-new Date(db.lastBackup))/864e5) : null;
+  return `<div class="card"><h3>导出给分析用（CSV）</h3><div class="row" style="margin-top:6px">
+    <button class="btn ghost" onclick="exportCSV('sets')">训练</button><button class="btn ghost" onclick="exportCSV('food')">饮食</button><button class="btn ghost" onclick="exportCSV('body')">身体与睡眠</button></div></div>
+  <div class="card"><h3>备份与恢复</h3><div class="mut">数据只存在这台手机的浏览器里。每周备份一次，存到「文件」App 或发给自己。${since==null?'<span class="warn">还没有备份过。</span>':`上次备份：${since} 天前。`}</div>
+    <div class="row" style="margin-top:6px"><button class="btn" onclick="backup()">备份</button><label class="btn ghost">从备份恢复<input type="file" accept=".json,application/json" onchange="restore(this)" hidden></label></div></div>
+  <div class="card"><h3>常用饮食按钮</h3><div class="list">${db.presets.map((p,i)=>`<div><span>${esc(p.n)}</span><span>${p.p} g <button class="x" onclick="delPreset(${i})">×</button></span></div>`).join('')}</div>
+    <div class="mut">在「饮食」页自定义时勾选「存为常用按钮」即可添加。</div></div>
+  <p class="mut">共 ${db.sets.length} 组训练 · ${db.food.length} 条饮食 · ${Object.keys(db.body).length} 天身体记录</p>`;
+}
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
+render();
+</script>
+</body>
+</html>
