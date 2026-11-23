@@ -195,18 +195,25 @@ const PLAN = {
 };
 const PROTEIN_TARGET = 120;
 const KCAL_TARGET = 2200; // 只作参考，热量缺口以体重趋势为准
-const MEALS = ['早餐','午餐','加餐','晚餐','其他'];
-// 套餐按钮：p 蛋白质 g，k 热量 kcal（外食估算）
+const MEALS = ['早餐','米饭和素菜','午餐','加餐','晚餐','其他'];
+// 一键按钮：p 蛋白质 g，k 热量 kcal（外食估算）
+// 满碗 = 公司食堂那种口径约 13–14 cm 的饭碗装平，约 280 g 熟米饭（按照片比例推算）
+// 素菜一格 = 分格盘一格装满，约 140 g 炒素菜
 const DEFAULT_PRESETS = [
   {n:'2 茶叶蛋＋菜包', p:16, k:280, c:'早餐'}, {n:'纯牛奶 250 mL', p:8, k:160, c:'早餐'}, {n:'茶叶蛋 1 个', p:6, k:72, c:'早餐'},
-  {n:'双鸡腿午餐', p:33, k:650, c:'午餐'}, {n:'豆干一份', p:10, k:80, c:'午餐'},
+  {n:'米饭 满碗', p:7, k:325, c:'米饭和素菜'}, {n:'米饭 大半碗', p:5, k:245, c:'米饭和素菜'}, {n:'米饭 半碗', p:4, k:160, c:'米饭和素菜'},
+  {n:'素菜一格', p:3, k:110, c:'米饭和素菜'},
+  {n:'卤鸡腿 2 只', p:26, k:240, c:'午餐'}, {n:'卤鸡腿 1 只', p:13, k:120, c:'午餐'}, {n:'豆干一份', p:10, k:80, c:'午餐'},
   {n:'即食鸡胸一包', p:18, k:120, c:'加餐'}, {n:'增肌粉 85 g', p:20, k:330, c:'加餐'}, {n:'乳清一勺', p:22, k:120, c:'加餐'},
   {n:'高蛋白酸奶', p:15, k:150, c:'加餐'}, {n:'香蕉', p:1, k:110, c:'加餐'},
-  {n:'瘦肉晚餐（一掌心）', p:30, k:650, c:'晚餐'}, {n:'肉少的晚餐', p:15, k:650, c:'晚餐'},
+  {n:'瘦肉主菜一份（约一掌心）', p:27, k:260, c:'晚餐'}, {n:'肉少的荤菜（肉丝、酸菜肉片）', p:9, k:230, c:'晚餐'},
 ];
+// 旧版的整餐按钮，拆成上面的单项后从按钮里移除；旧记录保留原值
+const LEGACY_PRESETS = {'双鸡腿午餐':{p:33,k:650}, '瘦肉晚餐（一掌心）':{p:30,k:650}, '肉少的晚餐':{p:15,k:650}};
 // 食物库：每 100 g 可食部分的蛋白质 p 和热量 k；u 为常用单位对应的克数（"两"=50 g 通用）
 // 数值参考《中国食物成分表》常见值取整，外食做法不同会有出入
 const FOODS = [
+  {g:'肉蛋豆', n:'卤鸡腿（快餐小琵琶腿，带皮）', p:24, k:215, u:{'只':55}},
   {g:'肉蛋豆', n:'鸡腿肉（熟，去骨）', p:24, k:200, u:{'掌心':100}},
   {g:'肉蛋豆', n:'鸡胸肉（熟）', p:30, k:165, u:{'掌心':100}},
   {g:'肉蛋豆', n:'瘦猪肉（熟）', p:27, k:200, u:{'掌心':100}},
@@ -217,7 +224,7 @@ const FOODS = [
   {g:'肉蛋豆', n:'鸡蛋／卤蛋', p:13, k:144, u:{'个':50}},
   {g:'肉蛋豆', n:'北豆腐', p:12, k:98, u:{'块':150}},
   {g:'肉蛋豆', n:'豆干', p:16, k:145, u:{'片':15}},
-  {g:'主食', n:'米饭（熟）', p:2.6, k:116, u:{'碗':220}},
+  {g:'主食', n:'米饭（熟）', p:2.6, k:116, u:{'满碗':280}},
   {g:'主食', n:'面条（湿面，按店里的两数）', p:8.5, k:285},
   {g:'主食', n:'馒头', p:7, k:220, u:{'个':100}},
   {g:'主食', n:'肉包子', p:8, k:230, u:{'个':80}},
@@ -231,7 +238,7 @@ const FOODS = [
   {g:'奶饮', n:'普通酸奶', p:3, k:90, u:{'盒':200}},
   {g:'奶饮', n:'乳清蛋白粉', p:75, k:390, u:{'勺':30}},
   {g:'奶饮', n:'增肌粉（康比特 MASS）', p:24, k:390, u:{'勺':85}},
-  {g:'果蔬', n:'炒青菜（含油）', p:2, k:80, u:{'份':150}},
+  {g:'果蔬', n:'炒素菜（含油）', p:2, k:80, u:{'格':140}},
   {g:'果蔬', n:'香蕉', p:1.4, k:93, u:{'根':120}},
   {g:'果蔬', n:'苹果／橙子', p:0.5, k:50, u:{'个':200}},
   {g:'其他', n:'士力架', p:9, k:490, u:{'条':51}},
@@ -247,8 +254,13 @@ const KEY = 'fitlog-v1';
 let db;
 try { db = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
 db = Object.assign({sets:[], food:[], body:{}, presets:DEFAULT_PRESETS, start:null}, db || {});
-db.presets.forEach(p => { const d = DEFAULT_PRESETS.find(x=>x.n===p.n); if(!p.c) p.c = d ? d.c : '其他'; if(p.k==null && d) p.k = d.k; });
-db.food.forEach(f => { if(f.k==null){ const d = db.presets.find(x=>x.n===f.n); if(d && d.k!=null) f.k = d.k; } });
+db.food.forEach(f => { if(f.k==null){ const d = LEGACY_PRESETS[f.n] || db.presets.find(x=>x.n===f.n); if(d && d.k!=null) f.k = d.k; } });
+if((db.pv||1) < 2){ // 一次性：去掉旧整餐按钮，补上新的单项按钮
+  db.presets = db.presets.filter(p=>!LEGACY_PRESETS[p.n]);
+  DEFAULT_PRESETS.forEach(d=>{ if(!db.presets.some(p=>p.n===d.n)) db.presets.push({...d}); });
+  db.pv = 2;
+}
+db.presets.forEach(p => { const d = DEFAULT_PRESETS.find(x=>x.n===p.n); if(!p.c || !MEALS.includes(p.c)) p.c = d ? d.c : '其他'; if(p.k==null && d) p.k = d.k; });
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){ alert('保存失败：' + e.message); } }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
 
@@ -511,6 +523,9 @@ function viewEstimate(){
         <span class="mut small"> · 约 ${Math.round(r.grams)} g${/面条/.test(f.n)?' 生面':''}</span></div>
       <button class="big" style="margin-top:10px" onclick="addEst()">记录 ${esc(f.n.replace(/（.*）/,''))} ${est.qty}${est.unit}</button>
       ${f.u&&f.u['掌心']?'<div class="mut small" style="margin-top:6px">一掌心 ≈ 100 g 熟肉（手掌大小、一指厚，不含手指）</div>':''}
+      ${f.u&&f.u['满碗']?'<div class="mut small" style="margin-top:6px">满碗 = 食堂那种口径 13–14 cm 的饭碗装平 ≈ 280 g；冒尖算 1.2，米饭只到碗壁一半高算 0.5</div>':''}
+      ${f.u&&f.u['格']?'<div class="mut small" style="margin-top:6px">一格 = 分格盘的一格装满 ≈ 140 g；汤汁多、油亮的菜热量会更高</div>':''}
+      ${f.u&&f.u['只']?'<div class="mut small" style="margin-top:6px">一只 ≈ 55 g 可吃的肉和皮（约 9–10 cm 长的小琵琶腿）</div>':''}
     </div>`;
   }
   return h + '</div>';
