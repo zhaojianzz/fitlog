@@ -178,6 +178,7 @@ const PLAN = {
   A: [
     {n:'深蹲（或倒蹬／哈克）', lo:6, hi:10, main:true},
     {n:'杠铃平板卧推', lo:6, hi:10, main:true},
+    {n:'坐姿绳索划船', lo:10, hi:12},
     {n:'辅助引体向上', lo:8, hi:12, main:true, assist:true},
     {n:'坐姿腿弯举', lo:10, hi:15},
     {n:'哑铃侧平举', lo:12, hi:20},
@@ -187,6 +188,7 @@ const PLAN = {
     {n:'罗马尼亚硬拉', lo:6, hi:10, main:true},
     {n:'上斜哑铃卧推', lo:8, hi:12, main:true},
     {n:'宽距下拉', lo:8, hi:12, main:true},
+    {n:'面拉（绳索）', lo:12, hi:15},
     {n:'倒蹬／哈克深蹲', lo:8, hi:12},
     {n:'站姿提踵', lo:10, hi:15},
     {n:'辅助双杠臂屈伸（可选）', lo:8, hi:12, assist:true},
@@ -422,7 +424,7 @@ function viewTrain(){
     h += `</div>`;
   });
   h += `<div class="sec">器械被占用？加一个替换动作</div>
-    <div class="card"><div class="row"><input class="field" id="oname" placeholder="动作名，如 坐姿划船"><button class="ghost" onclick="addOther()">添加</button></div></div>`;
+    <div class="card"><div class="row"><input class="field" id="oname" placeholder="动作名，如 腿屈伸"><button class="ghost" onclick="addOther()">添加</button></div></div>`;
   return h;
 }
 function toggleEx(i){ const n = curExs[i].n; openEx = openEx===n ? '' : n; render(); }
