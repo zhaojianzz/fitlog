@@ -725,7 +725,15 @@ function exportCSV(which){
 function backup(){ download(`练吃睡备份_${todayStr()}.json`, JSON.stringify(db), 'application/json'); db.lastBackup=todayStr(); save(); render(); }
 function restore(input){
   const f = input.files[0]; if(!f) return;
-  f.text().then(t=>{ const d=JSON.parse(t); if(!Array.isArray(d.sets)||!Array.isArray(d.food)) throw new Error('不是本应用的备份文件');
+  f.text().then(t=>{ const d=JSON.parse(t);
+    if(Array.isArray(d.importSets)){ // 只导入训练：替换文件里那几天的训练记录，其他数据不动
+      const days=[...new Set(d.importSets.map(x=>x.date))].sort();
+      if(confirm(`导入 ${d.importSets.length} 组训练，日期 ${days.join('、')}。这几天手机上已记的训练会被替换，饮食和身体数据不变。继续？`)){
+        db.sets=db.sets.filter(x=>!days.includes(x.date)).concat(d.importSets);
+        db.start=db.sets.map(x=>x.date).sort()[0];
+        save(); render(); toast('已导入训练记录'); }
+      return; }
+    if(!Array.isArray(d.sets)||!Array.isArray(d.food)) throw new Error('不是本应用的备份文件');
     if(confirm(`备份里有 ${d.sets.length} 组训练、${d.food.length} 条饮食。用它覆盖当前数据？`)){ db=Object.assign({presets:DEFAULT_PRESETS,body:{}},d); save(); render(); toast('已恢复'); } })
    .catch(e=>alert('读取失败：'+e.message));
 }
