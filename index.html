@@ -176,22 +176,22 @@ svg.chart text{fill:var(--faint);font-size:20px}
 // ---------- 计划配置（改动作就改这里）----------
 const PLAN = {
   A: [
-    {n:'深蹲（或倒蹬／哈克）', lo:6, hi:10, main:true},
-    {n:'杠铃平板卧推', lo:6, hi:10, main:true},
-    {n:'辅助引体向上', lo:8, hi:12, main:true, assist:true},
-    {n:'坐姿绳索划船', lo:10, hi:12},
+    {n:'深蹲（或倒蹬／哈克）', lo:6, hi:10, main:true, tag:'护腰', tip:'腰痛期：做哈克深蹲或倒蹬，背贴住靠垫，屁股离垫前就推起；杠铃深蹲先停'},
+    {n:'杠铃平板卧推', lo:6, hi:10, main:true, tag:'护腰', tip:'肩胛收紧下沉，腰不要刻意拱、屁股贴凳；腰压得慌就把脚放到凳上'},
+    {n:'辅助引体向上', lo:8, hi:12, main:true, assist:true, tip:'先沉肩再拉，手肘往裤兜方向拉；下巴微收，头不往前探'},
+    {n:'坐姿绳索划船', lo:10, hi:12, tag:'体态', tip:'改善头前倾、圆肩：肩胛先往后、往下收，再拉手肘；上身不晃，腰不后仰'},
     {n:'坐姿腿弯举', lo:10, hi:15},
-    {n:'哑铃侧平举', lo:12, hi:20},
+    {n:'哑铃侧平举', lo:12, hi:20, tip:'用 5–7.5 kg，慢抬慢放，不甩'},
     {n:'直杆绳索下压（可选）', lo:10, hi:15},
   ],
   B: [
-    {n:'罗马尼亚硬拉', lo:6, hi:10, main:true},
-    {n:'上斜哑铃卧推', lo:8, hi:12, main:true},
-    {n:'宽距下拉', lo:8, hi:12, main:true},
-    {n:'面拉（绳索）', lo:12, hi:15},
-    {n:'倒蹬／哈克深蹲', lo:8, hi:12},
-    {n:'站姿提踵', lo:10, hi:15},
-    {n:'辅助双杠臂屈伸（可选）', lo:8, hi:12, assist:true},
+    {n:'罗马尼亚硬拉', lo:6, hi:10, main:true, tag:'护腰', tip:'腰痛期先停：用页面下方的「坐姿腿弯举」替换记录'},
+    {n:'上斜哑铃卧推', lo:8, hi:12, main:true, tag:'护腰', tip:'腰不要拱，屁股贴凳'},
+    {n:'宽距下拉', lo:8, hi:12, main:true, tip:'先沉肩再拉；头别往前探去够杠'},
+    {n:'面拉（绳索）', lo:12, hi:15, tag:'体态', tip:'改善头前倾、圆肩：拉到额头前，两手往两边分，手肘抬高，停 1 秒；站稳别后仰'},
+    {n:'倒蹬／哈克深蹲', lo:8, hi:12, tag:'护腰', tip:'腰一直贴住靠垫，屁股要离垫前就停'},
+    {n:'站姿提踵', lo:10, hi:15, tag:'护腰', tip:'别挺肚子拱腰；腰不舒服就换坐姿提踵'},
+    {n:'辅助双杠臂屈伸（可选）', lo:8, hi:12, assist:true, tag:'体态', tip:'头前倾、圆肩时不太友好，时间紧就跳过'},
     {n:'牧师器弯举（可选）', lo:10, hi:15},
   ]
 };
@@ -260,6 +260,7 @@ const KEY = 'fitlog-v1';
 let db;
 try { db = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
 db = Object.assign({sets:[], food:[], body:{}, presets:DEFAULT_PRESETS, start:null}, db || {});
+db.fix = db.fix || {}; // {日期: [当天完成的矫正动作 id]}
 db.food.forEach(f => { if(f.k==null){ const d = LEGACY_PRESETS[f.n] || db.presets.find(x=>x.n===f.n); if(d && d.k!=null) f.k = d.k; } });
 if((db.pv||1) < 2){ // 一次性：去掉旧整餐按钮，补上新的单项按钮
   db.presets = db.presets.filter(p=>!LEGACY_PRESETS[p.n]);
@@ -332,6 +333,7 @@ const ICON = {
   food:'<path d="M3 12h18a9 9 0 0 1-18 0zM8 8c0-1.5 1-2 1-3.5M12 8c0-1.5 1-2 1-3.5M16 8c0-1.5 1-2 1-3.5" stroke-linecap="round"/>',
   body:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" stroke-linejoin="round"/>',
   chart:'<path d="M4 19h16M6 15l4-5 3 3 5-7" stroke-linecap="round" stroke-linejoin="round"/>',
+  fix:'<path d="M12 3v18M8 6h8M7 10.5h10M8 15h8M9 19.5h6" stroke-linecap="round"/>',
   data:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
 };
 const svgI = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICON[k]}</svg>`;
@@ -340,7 +342,7 @@ const chev = d => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" s
 // ---------- 页面框架 ----------
 let tab = 'train', day = null, curDate = todayStr(), openEx = null, curExs = [], tempEx = [];
 const draft = {}; // 每个动作正在编辑的 {w, r}
-const TABS = {train:'训练', food:'饮食', body:'身体', chart:'趋势', data:'数据'};
+const TABS = {train:'训练', fix:'矫正', food:'饮食', body:'身体', chart:'趋势', data:'数据'};
 $('#nav').innerHTML = Object.entries(TABS).map(([k,v])=>`<button data-t="${k}">${svgI(k)}<span>${v}</span></button>`).join('');
 $('#nav').onclick = e => { const b=e.target.closest('button'); if(b){ tab=b.dataset.t; render(); scrollTo(0,0);} };
 function setDate(s){ curDate = s; day = null; openEx = null; tempEx = []; render(); }
@@ -356,7 +358,7 @@ function renderHeader(){
 function render(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.t===tab));
   renderHeader();
-  $('#main').innerHTML = ({train:viewTrain, food:viewFood, body:viewBody, chart:viewChart, data:viewData})[tab]();
+  $('#main').innerHTML = ({train:viewTrain, fix:viewFix, food:viewFood, body:viewBody, chart:viewChart, data:viewData})[tab]();
 }
 
 // ---------- 训练 ----------
@@ -393,6 +395,10 @@ function viewTrain(){
     </div>
     <div class="prog"><i style="width:${target?Math.min(100,doneReq/target*100):0}%"></i></div>
   </div>`;
+  const wu = FIX.filter(f=>f.g==='warm'), wuDone = wu.filter(f=>fixDone(f.id)).length;
+  h += `<button class="card row" style="width:100%;text-align:left" onclick="tab='fix';render();scrollTo(0,0)">
+    <div class="dot ${wuDone>=wu.length?'done':wuDone?'part':''}">${wuDone>=wu.length?'✓':wuDone}</div>
+    <div class="grow"><div style="font-weight:600">先热身：${wu.map(f=>f.n.replace(/（.*）/,'')).join(' · ')}</div><div class="mut small">护腰核心激活，约 5 分钟 · 点这里去「矫正」页打勾</div></div><span class="chev">${chev('r')}</span></button>`;
   exs.forEach((ex,i)=>{
     const done = doneBy(ex.n), tgt = ex.extra ? Math.max(done.length,1) : targetSets(ex,date);
     const last = lastSession(ex.n, date);
@@ -402,7 +408,7 @@ function viewTrain(){
     h += `<div class="ex ${isOpen?'open':''}">
       <button class="ex-h" onclick="toggleEx(${i})">
         <div class="dot ${st}">${st==='done'?'✓':done.length||i+1}</div>
-        <div class="grow"><div class="t">${esc(ex.n)}</div><div class="s">${ex.extra?'替换动作':`${tgt} 组 × ${ex.lo}–${ex.hi} 次`} · ${lastTxt}</div></div>
+        <div class="grow"><div class="t">${esc(ex.n)}${ex.tag?` <span class="pill ${ex.tag==='护腰'?'warn':'ok'}">${ex.tag}</span>`:''}</div><div class="s">${ex.extra?'替换动作':`${tgt} 组 × ${ex.lo}–${ex.hi} 次`} · ${lastTxt}</div></div>
         <span class="mut small num">${done.length}/${tgt}</span><span class="chev">${chev('r')}</span>
       </button>`;
     if(isOpen){
@@ -411,6 +417,7 @@ function viewTrain(){
         r: done.length ? done[done.length-1].reps : (last ? last.sets[0].reps : ex.lo)});
       const hn = ex.extra ? null : hint(ex,last,date);
       h += `<div class="ex-b">
+        ${ex.tip?`<div class="hint mut">注意：${ex.tip}</div>`:''}
         ${hn?`<div class="hint ${hn.cls}">${hn.t}</div>`:''}
         ${done.length?`<div class="sets">${done.map((s,k)=>`<button class="set num" onclick="delSet('${s.id}')"><small>${k+1}</small>${s.w}kg × ${s.reps}</button>`).join('')}</div>`:''}
         <div class="pick">
@@ -424,7 +431,9 @@ function viewTrain(){
     h += `</div>`;
   });
   h += `<div class="sec">器械被占用？加一个替换动作</div>
-    <div class="card"><div class="row"><input class="field" id="oname" placeholder="动作名，如 腿屈伸"><button class="ghost" onclick="addOther()">添加</button></div></div>`;
+    <div class="card"><div class="row"><input class="field" id="oname" placeholder="动作名，如 腿屈伸"><button class="ghost" onclick="addOther()">添加</button></div>
+    <div class="chips" style="margin-top:10px">${['坐姿腿弯举','倒蹬／哈克深蹲','坐姿提踵'].map(n=>`<button class="chip" onclick="addOther('${n}')">${n}</button>`).join('')}</div>
+    <div class="mut small" style="margin-top:8px">腰痛期：罗马尼亚硬拉 → 坐姿腿弯举；站姿提踵 → 坐姿提踵</div></div>`;
   return h;
 }
 function toggleEx(i){ const n = curExs[i].n; openEx = openEx===n ? '' : n; render(); }
@@ -444,8 +453,8 @@ function addSet(i){
   startRest(ex.main ? 150 : 90);
   toast(`已记录 ${s.w}kg × ${s.reps}`, ()=>{ db.sets = db.sets.filter(x=>x.id!==s.id); });
 }
-function addOther(){
-  const n = $('#oname').value.trim(); if(!n) return toast('先填动作名');
+function addOther(name){
+  const n = (name || $('#oname').value).trim(); if(!n) return toast('先填动作名');
   if(!tempEx.includes(n)) tempEx.push(n);
   openEx = n; render();
 }
@@ -453,6 +462,49 @@ function delSet(id){
   const s = db.sets.find(x=>x.id===id); if(!s) return;
   db.sets = db.sets.filter(x=>x.id!==id); save(); render();
   toast(`已删除 ${s.w}kg × ${s.reps}`, ()=>{ db.sets.push(s); });
+}
+
+// ---------- 矫正：腰痛（怕后伸）和头前倾 ----------
+// g: warm 训练前 / daily 每天 / relief 腰不舒服时
+const FIX = [
+  {id:'deadbug', g:'warm', f:'腰', n:'死虫', d:'每边 8 次 × 2 组', c:'仰卧，手臂朝天、髋和膝弯成 90°。对侧手脚慢慢伸远，同时呼气；下背始终贴住地面，贴不住就伸短一点。'},
+  {id:'birddog', g:'warm', f:'腰', n:'鸟狗', d:'每边 6–8 次 × 2 组，每次停 5 秒', c:'跪趴，手在肩膀下、膝在髋下。对侧手脚伸直，腿只抬到和身体平齐，抬高了就是拱腰。'},
+  {id:'sideplank', g:'warm', f:'腰', n:'侧桥（屈膝）', d:'每边 15–20 秒 × 2 组', c:'侧躺，用手肘和膝盖撑起，头、躯干、膝盖一条直线，屁股不往后坐、不往下塌。'},
+  {id:'chintuck', g:'daily', f:'头', n:'收下巴', d:'10 次 × 停 5 秒，一天 2–3 次', c:'眼睛平视，下巴水平往后推，出现双下巴；不要低头点下巴，也不要仰头。用三四成力，可以靠墙做。'},
+  {id:'doorway', g:'daily', f:'头', n:'门框拉伸胸肌', d:'每边 30 秒 × 2', c:'小臂贴门框，手肘和肩同高，身体往前迈一步，胸前有拉伸感就停，不要疼。'},
+  {id:'wallangel', g:'daily', f:'头', n:'靠墙天使', d:'10 次', c:'背和后脑勺贴墙，双臂贴墙慢慢上下滑。腰离开墙就是在拱腰，缩小幅度。'},
+  {id:'plank', g:'daily', f:'腰', n:'平板支撑', d:'20–30 秒 × 2–3 组', c:'手肘撑地，屁股微微往里收，腹部收紧；不塌腰、不撅屁股。'},
+  {id:'bridge', g:'daily', f:'腰', n:'臀桥', d:'10–12 次 × 2 组', c:'仰卧屈膝，夹臀把髋抬到大腿和身体成一条直线就停，不要再往上顶。'},
+  {id:'walk', g:'daily', f:'腰', n:'走路，久坐定时起身', d:'累计 30 分钟；每坐 30–45 分钟起来 2–3 分钟', c:'起身时顺便做几次收下巴。'},
+  {id:'child', g:'relief', f:'腰', n:'婴儿式', d:'30 秒 × 2', c:'跪坐，上身往前趴，手往前伸，下背放松。往前弯的方向你会舒服。'},
+  {id:'knees', g:'relief', f:'腰', n:'仰卧抱膝', d:'30 秒 × 2', c:'仰卧，双手把膝盖抱向胸口，轻轻左右晃。'},
+];
+const fixDone = (id, date=curDate) => (db.fix[date]||[]).includes(id);
+function toggleFix(id){
+  const a = db.fix[curDate] || (db.fix[curDate] = []);
+  const i = a.indexOf(id); i<0 ? a.push(id) : a.splice(i,1);
+  if(!a.length) delete db.fix[curDate];
+  save(); render();
+}
+function viewFix(){
+  const days = [...Array(7)].map((_,i)=>addDays(curDate,-i)).filter(d=>(db.fix[d]||[]).length).length;
+  const item = f => `<div class="row" style="align-items:flex-start;padding:10px 0;border-bottom:.5px solid var(--line)">
+      <button class="dot ${fixDone(f.id)?'done':''}" onclick="toggleFix('${f.id}')" aria-label="${fixDone(f.id)?'取消':'完成'} ${f.n}">${fixDone(f.id)?'✓':''}</button>
+      <div class="grow"><div style="font-weight:600">${f.n} <span class="pill ${f.f==='腰'?'warn':'ok'}">${f.f==='腰'?'护腰':'体态'}</span></div>
+        <div class="mut small">${f.d}</div><div class="small" style="margin-top:4px">${f.c}</div></div></div>`;
+  const group = (g, title) => `<div class="sec">${title}</div><div class="card" style="padding-top:4px;padding-bottom:4px">${FIX.filter(f=>f.g===g).map(item).join('')}</div>`;
+  const list = a => `<ul style="margin:0;padding-left:20px" class="small">${a.map(x=>`<li style="margin:3px 0">${x}</li>`).join('')}</ul>`;
+  return `<div class="card"><div style="font-weight:600">今天完成 ${(db.fix[curDate]||[]).length} / ${FIX.length} 项</div>
+      <div class="mut small">最近 7 天有 ${days} 天做了 · 点圆圈打勾</div>
+    <div class="hint warn" style="margin:12px 0 0">腰：脊柱正中疼，后仰、久站加重，往前弯缓解（怕后伸）。原则是不拱腰、核心顶住，并尽快去骨科或康复科检查。</div>
+    <div class="hint ok" style="margin:8px 0 0">头前倾、圆肩：多做拉的动作（划船、面拉），每天收下巴，放松胸肌，改掉低头看屏幕的习惯。</div></div>
+  ${group('warm','训练前热身 · 每次训练先做')}
+  ${group('daily','每天 · 在家或工位')}
+  ${group('relief','腰不舒服时 · 放松')}
+  <div class="sec">腰痛期先别做</div><div class="card">${list(['杠铃深蹲、罗马尼亚硬拉 → 换哈克深蹲／倒蹬、坐姿腿弯举','山羊挺身（背起）、站姿过头推举','俯卧腿弯举（容易翘屁股拱腰）；站姿提踵时挺肚子','卧推时大幅拱腰','趴着睡'])}</div>
+  <div class="sec">平时习惯</div><div class="card">${list(['屏幕上沿和眼睛差不多高，看手机时把手机举起来','久站时一只脚踩矮台阶，两脚轮换；不挺肚子后仰','侧睡两腿夹枕头，平躺膝下垫枕头；枕头高度让头和脊柱成一条线','弯腰搬东西时先屈髋屈膝蹲下去'])}</div>
+  <div class="sec">出现这些尽快就医</div><div class="card">${list(['疼痛放射到屁股、大腿或小腿，腿发麻或没力气','走一段路腿就酸胀，要停下休息才能继续','晚上躺着也疼，换姿势不缓解','大小便异常或会阴部发麻（马上去急诊）'])}</div>
+  <div class="mut small" style="text-align:center;margin:4px 0 8px">以上是一般建议，不能代替医生的检查和诊断</div>`;
 }
 
 // ---------- 组间休息计时（主动作 2.5 分钟，其余 90 秒）----------
