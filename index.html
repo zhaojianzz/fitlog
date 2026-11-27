@@ -172,6 +172,7 @@ svg.chart text{fill:var(--faint);font-size:20px}
 <div id="rest"></div>
 <div id="toast"></div>
 <nav id="nav"></nav>
+<script src="foods.js"></script>
 <script>
 // ---------- 计划配置（改动作就改这里）----------
 const PLAN = {
@@ -218,27 +219,27 @@ const RENAMED_V3 = {'卤鸡腿 2 只':'卤鸡腿 2 只（去皮）', '卤鸡腿 
 // 食物库：每 100 g 可食部分的蛋白质 p 和热量 k；u 为常用单位对应的克数（"两"=50 g 通用）
 // 数值参考《中国食物成分表》常见值取整，外食做法不同会有出入
 const FOODS = [
-  {g:'肉蛋豆', n:'卤鸡腿（快餐小琵琶腿，去皮）', p:26, k:175, u:{'只':45}, h:'一只 ≈ 45 g 去皮的肉（约 9–10 cm 长的小琵琶腿）；带皮吃每只再加约 40 kcal'},
-  {g:'肉蛋豆', n:'鸭腿（去皮）', p:22, k:170, u:{'只':105}, h:'一只 ≈ 105 g 去皮的肉（盖饭里常见的大鸭腿）；带皮吃每只再加约 200 kcal'},
-  {g:'肉蛋豆', n:'鸡腿肉（熟，去骨）', p:24, k:200, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'鸡胸肉（熟）', p:30, k:165, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'瘦猪肉（熟）', p:27, k:200, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'肥瘦猪肉／五花（熟）', p:14, k:420, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'牛肉（熟，瘦）', p:30, k:200, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'鱼肉（熟）', p:20, k:120, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'虾仁（熟）', p:22, k:100, u:{'掌心':100}},
-  {g:'肉蛋豆', n:'鸡蛋／卤蛋', p:13, k:144, u:{'个':50}},
-  {g:'肉蛋豆', n:'北豆腐', p:12, k:98, u:{'块':150}},
-  {g:'肉蛋豆', n:'豆干', p:16, k:145, u:{'片':15}},
-  {g:'主食', n:'米饭（熟）', p:2.6, k:116, u:{'满碗':280}},
-  {g:'主食', n:'面条（湿面，按店里的两数）', p:8.5, k:285},
-  {g:'主食', n:'馒头', p:7, k:220, u:{'个':100}},
-  {g:'主食', n:'肉包子', p:8, k:230, u:{'个':80}},
-  {g:'主食', n:'菜包子', p:6, k:180, u:{'个':70}},
-  {g:'主食', n:'小笼包', p:9, k:240, u:{'个':25}},
-  {g:'主食', n:'抄手／饺子', p:8, k:200, u:{'个':20}},
-  {g:'主食', n:'白粥', p:1.1, k:46, u:{'碗':300}},
-  {g:'主食', n:'红薯／土豆', p:1.5, k:90, u:{'个':200}},
+  {g:'常用', n:'卤鸡腿（快餐小琵琶腿，去皮）', p:26, k:175, u:{'只':45}, h:'一只 ≈ 45 g 去皮的肉（约 9–10 cm 长的小琵琶腿）；带皮吃每只再加约 40 kcal'},
+  {g:'常用', n:'鸭腿（去皮）', p:22, k:170, u:{'只':105}, h:'一只 ≈ 105 g 去皮的肉（盖饭里常见的大鸭腿）；带皮吃每只再加约 200 kcal'},
+  {g:'常用', n:'鸡腿肉（熟，去骨）', p:24, k:200, u:{'掌心':100}},
+  {g:'常用', n:'鸡胸肉（熟）', p:30, k:165, u:{'掌心':100}},
+  {g:'常用', n:'瘦猪肉（熟）', p:27, k:200, u:{'掌心':100}},
+  {g:'常用', n:'肥瘦猪肉／五花（熟）', p:14, k:420, u:{'掌心':100}},
+  {g:'常用', n:'牛肉（熟，瘦）', p:30, k:200, u:{'掌心':100}},
+  {g:'常用', n:'鱼肉（熟）', p:20, k:120, u:{'掌心':100}},
+  {g:'常用', n:'虾仁（熟）', p:22, k:100, u:{'掌心':100}},
+  {g:'常用', n:'鸡蛋／卤蛋', p:13, k:144, u:{'个':50}},
+  {g:'常用', n:'北豆腐', p:12, k:98, u:{'块':150}},
+  {g:'常用', n:'豆干', p:16, k:145, u:{'片':15}},
+  {g:'常用', n:'米饭（熟）', p:2.6, k:116, u:{'满碗':280}},
+  {g:'常用', n:'面条（湿面，按店里的两数）', p:8.5, k:285},
+  {g:'常用', n:'馒头', p:7, k:220, u:{'个':100}},
+  {g:'常用', n:'肉包子', p:8, k:230, u:{'个':80}},
+  {g:'常用', n:'菜包子', p:6, k:180, u:{'个':70}},
+  {g:'常用', n:'小笼包', p:9, k:240, u:{'个':25}},
+  {g:'常用', n:'抄手／饺子', p:8, k:200, u:{'个':20}},
+  {g:'常用', n:'白粥', p:1.1, k:46, u:{'碗':300}},
+  {g:'常用', n:'红薯／土豆', p:1.5, k:90, u:{'个':200}},
   {g:'快餐', n:'手抓饼（加蛋＋火腿或里脊）', p:9, k:260, u:{'张':200}, h:'一张 ≈ 18 g 蛋白质、520 kcal；只加蛋约 420 kcal，加两样肉约 600 kcal'},
   {g:'快餐', n:'手抓饼（只加蛋）', p:8, k:262, u:{'张':160}},
   {g:'快餐', n:'鸡蛋灌饼', p:8, k:253, u:{'个':150}},
@@ -257,19 +258,20 @@ const FOODS = [
   {g:'快餐', n:'蛋炒饭', p:5, k:190, u:{'份':400}},
   {g:'快餐', n:'炒面／炒粉', p:5, k:180, u:{'份':400}},
   {g:'快餐', n:'肉粽', p:6.7, k:240, u:{'个':150}},
-  {g:'奶饮', n:'奶茶（全糖）', p:0.8, k:60, u:{'杯':500}, h:'一杯 500 mL 约 300 kcal；少糖约 220，加珍珠再加约 100'},
-  {g:'奶饮', n:'可乐等含糖饮料', p:0, k:43, u:{'罐':330, '瓶':500}},
-  {g:'奶饮', n:'纯牛奶', p:3.2, k:65, u:{'盒':250}},
-  {g:'奶饮', n:'无糖豆浆', p:3, k:35, u:{'杯':300}},
-  {g:'奶饮', n:'普通酸奶', p:3, k:90, u:{'盒':200}},
-  {g:'奶饮', n:'乳清蛋白粉', p:75, k:390, u:{'勺':30}},
-  {g:'奶饮', n:'增肌粉（康比特 MASS）', p:24, k:390, u:{'勺':85}},
-  {g:'果蔬', n:'炒素菜（含油）', p:2, k:80, u:{'格':140}},
-  {g:'果蔬', n:'香蕉', p:1.4, k:93, u:{'根':120}},
-  {g:'果蔬', n:'苹果／橙子', p:0.5, k:50, u:{'个':200}},
-  {g:'其他', n:'士力架', p:9, k:490, u:{'条':51}},
-  {g:'其他', n:'花生／坚果', p:25, k:590, u:{'把':15}},
+  {g:'常用', n:'奶茶（全糖）', p:0.8, k:60, u:{'杯':500}, h:'一杯 500 mL 约 300 kcal；少糖约 220，加珍珠再加约 100'},
+  {g:'常用', n:'可乐等含糖饮料', p:0, k:43, u:{'罐':330, '瓶':500}},
+  {g:'常用', n:'纯牛奶', p:3.2, k:65, u:{'盒':250}},
+  {g:'常用', n:'无糖豆浆', p:3, k:35, u:{'杯':300}},
+  {g:'常用', n:'普通酸奶', p:3, k:90, u:{'盒':200}},
+  {g:'常用', n:'乳清蛋白粉', p:75, k:390, u:{'勺':30}},
+  {g:'常用', n:'增肌粉（康比特 MASS）', p:24, k:390, u:{'勺':85}},
+  {g:'常用', n:'炒素菜（含油）', p:2, k:80, u:{'格':140}},
+  {g:'常用', n:'香蕉', p:1.4, k:93, u:{'根':120}},
+  {g:'常用', n:'苹果／橙子', p:0.5, k:50, u:{'个':200}},
+  {g:'常用', n:'士力架', p:9, k:490, u:{'条':51}},
+  {g:'常用', n:'花生／坚果', p:25, k:590, u:{'把':15}},
 ];
+if(typeof FOODS_DB !== 'undefined') FOODS.push(...FOODS_DB); // foods.js 没加载到时只用上面的常用食物
 function foodCalc(f, qty, unit){ // 返回 {p, k, grams}
   const grams = qty * (unit==='g' ? 1 : unit==='两' ? 50 : (f.u && f.u[unit]) || 1);
   return {grams, p: Math.round(f.p*grams/100), k: Math.round(f.k*grams/100)};
@@ -590,13 +592,14 @@ function viewFood(){
   return h;
 }
 // 按分量估算：选食物 → 选数量和单位 → 自动算蛋白质和热量
-let est = {g:'肉蛋豆', i:null, qty:1, unit:'g', q:''};
+let est = {g:'常用', i:null, qty:1, unit:'g', q:''};
 const foodChips = () => FOODS.map((f,i)=>(est.q ? !f.n.includes(est.q) : f.g!==est.g)?'':`<button class="chip ${i===est.i?'on':''}" onclick="pickFood(${i})">${esc(f.n)}</button>`).join('') || '<span class="mut small">没找到。可以把吃的东西发给 Claude 估算，再用下面的「直接填」记</span>';
 function viewEstimate(){
-  const groups = [...new Set(FOODS.map(f=>f.g))];
+  const groups = [...new Set(['常用','快餐','家常菜','火锅','烧烤', ...FOODS.map(f=>f.g)])];
   let h = `<div class="sec">按分量估算 · 只知道吃了多少时用</div><div class="card">
     <input class="field" style="margin-bottom:10px" placeholder="搜索：手抓饼、汉堡、炸鸡…" value="${esc(est.q)}" oninput="est.q=this.value.trim();$('#foodchips').innerHTML=foodChips()">
-    <div class="seg" style="margin-bottom:10px">${groups.map(g=>`<button class="${g===est.g&&!est.q?'on':''}" onclick="est.g='${g}';est.q='';est.i=null;render()" style="font-size:14px;padding:8px 0">${g}</button>`).join('')}</div>
+    <div class="chips" style="margin-bottom:10px">${groups.map(g=>`<button class="chip ${g===est.g&&!est.q?'on':''}" style="font-weight:600" onclick="est.g='${g}';est.q='';est.i=null;render()">${g}</button>`).join('')}</div>
+    <div style="border-top:.5px solid var(--line);margin-bottom:10px"></div>
     <div class="chips" id="foodchips">${foodChips()}</div>`;
   if(est.i!=null){
     const f = FOODS[est.i], r = foodCalc(f, est.qty, est.unit);
@@ -614,6 +617,7 @@ function viewEstimate(){
       ${f.u&&f.u['满碗']?'<div class="mut small" style="margin-top:6px">满碗 = 食堂那种口径 13–14 cm 的锥形饭碗装平 ≈ 280 g。碗底小，米饭大多在上半截：冒尖约 1.3 碗；低于碗口一指约 0.7 碗；只到碗壁 2/3 高约 0.5 碗；只到一半高约 0.35 碗</div>':''}
       ${f.u&&f.u['格']?'<div class="mut small" style="margin-top:6px">一格 = 分格盘的一格装满 ≈ 140 g；汤汁多、油亮的菜热量会更高</div>':''}
       ${f.h?'<div class="mut small" style="margin-top:6px">'+f.h+'</div>':''}
+      <div class="mut small" style="margin-top:6px">${f.s?'数据：台湾食药署食品营养成分资料库，按可食部分计':f.g==='常用'?'常用份量，按《中国食物成分表》常见值整理':'外食估算值，店家做法不同可能差 ±20%'}</div>
     </div>`;
   }
   return h + '</div>';
@@ -830,6 +834,7 @@ function viewData(){
   <div class="sec">饮食按钮</div>
   <div class="card"><div class="log" style="margin-top:0;border-top:0">${db.presets.map((p,i)=>`<div><span class="pill">${p.c}</span><span class="grow">${esc(p.n)}</span><span class="mut num">${p.p} g</span><button class="x" onclick="delPreset(${i})" aria-label="删除">×</button></div>`).join('')}</div>
     <div class="mut small" style="margin-top:8px">在「饮食」页自己填时勾选「同时存成按钮」即可添加</div></div>
+  <p class="mut small" style="text-align:center">食物数据部分来自台湾卫生福利部食品药物管理署「食品营养成分资料集」（政府资料开放授权条款第 1 版）</p>
   <p class="mut small" style="text-align:center">${db.sets.length} 组训练 · ${db.food.length} 条饮食 · ${Object.keys(db.body).length} 天身体记录</p>`;
 }
 
